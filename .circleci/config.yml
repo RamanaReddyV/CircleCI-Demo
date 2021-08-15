@@ -1,0 +1,56 @@
+version: 2.1
+
+orbs:
+   windows: circleci/windows@2.4.0
+
+jobs:
+   build:
+      executor:
+         name: windows/default
+
+      steps:
+         - checkout
+         - run:
+              name: Build Demo App
+              command: .\.circleci\Build.ps1
+         
+
+   build-deploy:
+      executor:
+         name: windows/default
+
+      steps:
+         - checkout
+         - add_ssh_keys:
+              fingerprints:
+                  - "00:71:be:b2:2b:fb:ce:c5:3b:77:2e:a1:5e:d7:45:6e" 
+
+         - run:
+              name: Build Demo App
+              command: .\.circleci\Build.ps1
+         - run:
+              name: Update Host
+              command: .\.circleci\Set_Known_Hosts.ps1
+
+         - run:
+              name: Deploy App into EC2
+              shell: bash.exe
+              command: ./.circleci/GIT_Bash_Setup.sh
+
+workflows:
+   version: 2
+   build-and-deploy:
+      jobs:
+         - build-deploy:
+              filters:
+                 branches:
+                    only:
+                       - master
+
+   build:
+      jobs:
+         - build:
+              filters:
+                 branches:
+                    ignore:
+                       - master
